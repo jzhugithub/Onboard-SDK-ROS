@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 
 	
     Display_Main_Menu();
-    while(1)
+    while(ros::ok())
     {
         ros::spinOnce();
         std::cout << "Enter Input Val: ";
@@ -193,7 +193,8 @@ int main(int argc, char *argv[])
                 break;
             case 7:
                 /*gimbal test*/
-
+		
+		/*
                 drone->gimbal_angle_control(0, 0, 1800, 20);
                 sleep(2);
                 drone->gimbal_angle_control(0, 0, -1800, 20);
@@ -219,8 +220,23 @@ int main(int argc, char *argv[])
                 drone->gimbal_speed_control(0, -200, 0);
                 sleep(2);
                 drone->gimbal_angle_control(0, 0, 0, 20);
-                break;
-
+                */
+		for(int i = 0;i<1000;i++)
+		{
+		  drone->gimbal_speed_control(0, 400*sin(2*3.14/4*(i*0.1)), 400*sin(2*3.14/4*(i*0.1)));
+		  usleep(100000);
+		}
+/*		for(int i = 0; i < 1000; i ++)
+                {
+		  ROS_INFO("a");
+                    if(i < 500)
+                        drone->gimbal_speed_control(0, 0, 200);
+                    else
+                        drone->gimbal_speed_control(0, 0, -200);
+                    usleep(50000);
+                }
+		break;
+*/
             case 8:
                 /* attitude control sample*/
                 drone->takeoff();
