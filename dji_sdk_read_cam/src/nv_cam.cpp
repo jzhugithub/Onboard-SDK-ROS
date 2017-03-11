@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 	int to_mobile = 0;
 
 	IplImage *pRawImg;
-	IplImage *pImg;
+	IplImage *pImg,*dst;
 	unsigned char *pData;
 
 	int mode = GETBUFFER_MODE;
@@ -196,6 +196,8 @@ int main(int argc, char **argv)
 	if(gray_or_rgb){
 		pRawImg = cvCreateImage(cvSize(IMAGE_W, IMAGE_H),IPL_DEPTH_8U,3);
 		pImg = cvCreateImage(cvSize(640, 480),IPL_DEPTH_8U,3);
+		dst = cvCreateImage(cvSize(640, 480),IPL_DEPTH_8U,3);
+		//pImg = cvCreateImage(cvSize(1280, 960),IPL_DEPTH_8U,3);
 		pData  = new unsigned char[1280 * 720 * 3];
 	} else{
 		pRawImg = cvCreateImage(cvSize(IMAGE_W, IMAGE_H),IPL_DEPTH_8U,1);
@@ -260,7 +262,39 @@ int main(int argc, char **argv)
 				memcpy(pRawImg->imageData,buffer,FRAME_SIZE/3);
 			}
 			cvResize(pRawImg,pImg,CV_INTER_LINEAR);
+			//--------Undistort--------
+			double *mi= new double[3*3];
+			double *md = new double[4];
+			CvMat intrinsic_matrix,distortion_coeffs;
+			cvInitMatHeader(&intrinsic_matrix,3,3,CV_64FC1,mi);
+			cvInitMatHeader(&distortion_coeffs,1,4,CV_64FC1,md);
+			double fc1,fc2,cc1,cc2,kc1,kc2,kc3,kc4;
+			fc1 = 376.629954;
+			fc2 = 494.151786 ;
+			cc1 = 328.197659;
+			cc2 = 243.514635;
+			kc1 =  -0.132531;
+			kc2 =   0.091317;
+			kc3 =  0.001575 ;
+			kc4 =  0.001511;
 
+			cvmSet(&intrinsic_matrix, 0, 0, fc1);
+			cvmSet(&intrinsic_matrix, 0, 1, 0);
+			cvmSet(&intrinsic_matrix, 0, 2, cc1);
+			cvmSet(&intrinsic_matrix, 1, 0, 0);
+			cvmSet(&intrinsic_matrix, 1, 1, fc2);
+			cvmSet(&intrinsic_matrix, 1, 2, cc2);
+			cvmSet(&intrinsic_matrix, 2, 0, 0);
+			cvmSet(&intrinsic_matrix, 2, 1, 0);
+			cvmSet(&intrinsic_matrix, 2, 2, 1);
+
+			cvmSet(&distortion_coeffs, 0, 0, kc1);
+			cvmSet(&distortion_coeffs, 0, 1, kc2);
+			cvmSet(&distortion_coeffs, 0, 2, kc3);
+			cvmSet(&distortion_coeffs, 0, 3, kc4);
+
+			cvUndistort2( pImg, dst, &intrinsic_matrix, &distortion_coeffs);
+			//-------------end------------
 			time=ros::Time::now();
 			cvi.header.stamp = time;
 			cvi.header.frame_id = "image";
@@ -269,7 +303,7 @@ int main(int argc, char **argv)
 			}else{
 				cvi.encoding = "mono8";
 			}
-			cvi.image = pImg;
+			cvi.image = dst;
 			cvi.toImageMsg(im);
 			cam_info.header.seq = nCount;
 			cam_info.header.stamp = time;
